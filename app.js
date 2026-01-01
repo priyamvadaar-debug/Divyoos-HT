@@ -1,37 +1,63 @@
-let habits = JSON.parse(localStorage.getItem("habits")) || [];
+// Load habits from localStorage or start empty
+let habitsData = JSON.parse(localStorage.getItem("habitsData")) || { habits: [], lastDate: null };
 
+// Check if date changed to reset daily
+function checkDailyReset() {
+  const today = new Date().toDateString();
+  if (habitsData.lastDate !== today) {
+    habitsData.habits.forEach(habit => {
+      if (habit.done) {
+        habit.streak = (habit.streak || 0) + 1; // increment streak if done yesterday
+      } else {
+        habit.streak = 0; // reset streak if not done
+      }
+      habit.done = false; // reset done for new day
+    });
+    habitsData.lastDate = today;
+    save();
+  }
+}
+
+// Save to localStorage and render
 function save() {
-  localStorage.setItem("habits", JSON.stringify(habits));
+  localStorage.setItem("habitsData", JSON.stringify(habitsData));
   render();
 }
 
+// Add new habit
 function addHabit() {
-  const name = prompt("Habit name:");
+  const name = prompt("Enter habit name:");
   if (!name) return;
 
-  habits.push({ name, done: false });
+  habitsData.habits.push({ name, done: false, streak: 0 });
   save();
 }
 
+// Toggle checkbox
 function toggleHabit(index) {
-  habits[index].done = !habits[index].done;
+  habitsData.habits[index].done = !habitsData.habits[index].done;
   save();
 }
 
+// Render habits
 function render() {
   const container = document.getElementById("habits");
   container.innerHTML = "";
 
-  habits.forEach((habit, index) => {
+  habitsData.habits.forEach((habit, index) => {
     const div = document.createElement("div");
     div.className = "habit";
     div.innerHTML = `
-      ${habit.name}
-      <input type="checkbox" ${habit.done ? "checked" : ""} 
-      onclick="toggleHabit(${index})">
+      <div>
+        ${habit.name} 
+        <span class="streak">🔥 ${habit.streak || 0}</span>
+      </div>
+      <input type="checkbox" ${habit.done ? "checked" : ""} onclick="toggleHabit(${index})">
     `;
     container.appendChild(div);
   });
 }
 
+// Initial check and render
+checkDailyReset();
 render();
